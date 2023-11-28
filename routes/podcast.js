@@ -16,7 +16,42 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Lỗi khi lấy danh sách padcasts" });
   }
 });
+router.get("/findByTopic/:topicId", async (req, res) => {
+  
+  try {
+    var list = [];
+  const podcasts = await Podcast.find({
+      "topicsList._id": req.params.topicId
+    }).exec();
+    res.status(200).json(podcasts);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Lỗi khi lấy danh sách podcast theo topic" });
+  }
+});
 
+
+//search podcast
+router.get("/search", async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    if (!keyword) {
+      return res.status(400).json({ error: "Vui lòng nhập từ khóa tìm kiếm." });
+    }
+
+    const regex = new RegExp(keyword, "i"); // Tìm kiếm không phân biệt chữ hoa chữ thường
+
+    const podcasts = await Podcast.find({
+      $or: [{ title: { $regex: regex } }, { host: { $regex: regex } }]
+    });
+
+    res.status(200).json(podcasts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Lỗi khi tìm kiếm podcast." });
+  }
+});
 // POST: Tạo podcast mới
 router.post("/", verifyTokenAndAdmin, async (req, res) => {
   const { title, description, imageUrl, host, topicsList, publishDate } = req.body;
@@ -45,7 +80,7 @@ router.post("/", verifyTokenAndAdmin, async (req, res) => {
 // GET: Lấy chi tiết podcast theo ID
 router.get("/:id", async (req, res) => {
   try {
-    const podcast  = await Episode.findById(req.params.id);
+    const podcast  = await Podcast.findById(req.params.id);
     if (!podcast) {
       return res.status(404).json({ error: "Không tìm thấy podcast" });
     }

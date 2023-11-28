@@ -3,7 +3,7 @@ const { boolean } = require("webidl-conversions");
 const { UserSchema } = require("./User");
 const EpisodeSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  description: { type: String, required: true },
+  description: { type: String, },
   duration: { type: Number, required: true },
   audioFile: { type: String, required: true },
   publishDate: { type: Number, required: true },

@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const User = require("../models/User");
+const { User } = require("../models/User");
 const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
 
@@ -8,17 +8,29 @@ let refreshTokens = [];
 router.post("/register", async (req, res) => {
   try {
     const { username, email, password, fullName, dateOfBirth } = req.body;
+
+    const checkUser = await User.findOne({
+      $or: [
+        { username: username },
+        { email: email }
+      ]
+    });
+    if(checkUser) {
+      return res.status(401).json('User already exists');
+    }
     const user = new User({
       username: username,
-      password: CryptoJS.AES.encrypt(password, process.env.PASS_SEC).toString(),
+      password: CryptoJS.AES
+        .encrypt(password, process.env.PASS_SEC)
+        .toString(),
       email: email,
       fullName: fullName,
-      dateOfBirth: dateOfBirth
+      dateOfBirth: Date(dateOfBirth)
     });
 
     await user.save();
 
-    res.status(201).json({ user: user });
+    res.status(200).json({ user: user });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: error });
@@ -29,7 +41,9 @@ router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ username: username });
-    !user && res.status(401).json("Wrong credentials");
+    if (!user) {
+      return res.status(401).json("Wrong credentials");
+    }
     const hashedPassword = CryptoJS.AES.decrypt(
       user.password,
       process.env.PASS_SEC
@@ -60,6 +74,7 @@ router.post("/login", async (req, res) => {
 
     res.status(200).json({ data, accessToken, refreshToken });
   } catch (error) {
+    console.log(error);
     res.status(500).json(error);
   }
 });

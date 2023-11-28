@@ -3,7 +3,7 @@ const {
   verifyTokenAndAuthorization,
   verifyTokenAndAdmin
 } = require("./verifyToken");
-const Topic = require("../models/Topic");
+const { Topic } = require("../models/Topic");
 const router = require("express").Router();
 
 //GET ALL TOPICS
@@ -12,6 +12,7 @@ router.get("/" , async (req, res) => {
     const topics = await Topic.find();
     res.status(200).json(topics);
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: "Lỗi khi lấy danh sách chủ đề" });
   }
 });
