@@ -81,13 +81,11 @@ router.post("/login", async (req, res) => {
 
 router.post("/refresh-token", async (req, res) => {
   try {
-    const refreshToken = req.body.refreshToken;
+    const refreshToken = req.body.token;
 
-    if (!refreshToken) res.sendStatus(401);
-    if (!refreshTokens.includes(refreshToken))
-      res.status(403).json("Token is not valid");
+    if (!refreshToken) return res.status(401).json('Token is not existed');
     jwt.verify(refreshToken, process.env.JWT_SEC_REFRESH, (err, user) => {
-      if (err) res.status(403).json("Token is not valid");
+      if (err)  return res.status(403).json("Token is not valid");
       const accessToken = jwt.sign(
         {
           id: user._id,
@@ -97,11 +95,11 @@ router.post("/refresh-token", async (req, res) => {
         { expiresIn: "3d" }
       );
       console.log(accessToken);
-      res.status(200).json({ accessToken: accessToken });
+      return res.status(200).json({ accessToken: accessToken });
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ error: error });
+    return res.status(500).json({ error: error });
   }
 });
 module.exports = router;

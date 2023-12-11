@@ -122,4 +122,31 @@ router.put(
     }
   }
 );
+
+router.put("/:podcastId/increment-listens/:episodeId", async (req, res) => {
+  const episodeId = req.params.episodeId;
+  const podcastId = req.params.podcastId;
+
+  try {
+    // Find the episode by ID and update the listens field
+    const updatedEpisode = await Episode.findByIdAndUpdate(
+      episodeId,
+      { $inc: { listens: 1 } },
+      { new: true }
+    );
+
+    if (!updatedEpisode) {
+      return res.status(404).json({ error: "Episode not found" });
+    }
+    await Podcast.updateOne(
+      { _id: podcastId, "episodesList._id": episodeId },
+      { $set: { "episodesList.$": updatedEpisode } }
+    );
+
+    return res.status(200).json(updatedEpisode);
+  } catch (error) {
+    console.error("Error updating listens:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 module.exports = router;

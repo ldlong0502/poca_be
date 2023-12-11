@@ -8,6 +8,7 @@ const authRoute = require('./routes/auth');
 const topicRoute = require('./routes/topic');
 const episodeRoute = require("./routes/episode");
 const podcastRoute = require("./routes/podcast");
+const playlistRoute = require("./routes/playlist");
 dotenv.config();
 
 
@@ -21,7 +22,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/topics", topicRoute);
 app.use("/api/podcasts", episodeRoute);
 app.use("/api/podcasts", podcastRoute);
-
+app.use("/api/playlists", playlistRoute);
 
 app.listen( process.env.PORT || 5000, () => {
     console.log('server is running')

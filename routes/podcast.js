@@ -5,6 +5,7 @@ const {
 } = require("./verifyToken");
 const { Podcast } = require("../models/Podcast");
 const { Topic } = require("../models/Topic");
+const { User } = require("../models/User");
 const router = require("express").Router();
 
 //GET ALL Episodes
@@ -17,10 +18,9 @@ router.get("/", async (req, res) => {
   }
 });
 router.get("/findByTopic/:topicId", async (req, res) => {
-  
   try {
     var list = [];
-  const podcasts = await Podcast.find({
+    const podcasts = await Podcast.find({
       "topicsList._id": req.params.topicId
     }).exec();
     res.status(200).json(podcasts);
@@ -29,7 +29,6 @@ router.get("/findByTopic/:topicId", async (req, res) => {
     res.status(500).json({ error: "Lỗi khi lấy danh sách podcast theo topic" });
   }
 });
-
 
 //search podcast
 router.get("/search", async (req, res) => {
@@ -54,10 +53,17 @@ router.get("/search", async (req, res) => {
 });
 // POST: Tạo podcast mới
 router.post("/", verifyTokenAndAdmin, async (req, res) => {
-  const { title, description, imageUrl, host, topicsList, publishDate } = req.body;
+  const {
+    title,
+    description,
+    imageUrl,
+    host,
+    topicsList,
+    publishDate
+  } = req.body;
   try {
-     const foundTopics = await Topic.find({ _id: { $in: topicsList } });
-        
+    const foundTopics = await Topic.find({ _id: { $in: topicsList } });
+
     console.log(foundTopics);
     const newPodcast = new Podcast({
       title,
@@ -76,11 +82,122 @@ router.post("/", verifyTokenAndAdmin, async (req, res) => {
     res.status(500).json({ error: "Lỗi khi tạo podcast" });
   }
 });
+router.post("/:podcastId/add-favorite/:userId", async (req, res) => {
+  const podcastId = req.params.podcastId;
+  const userId = req.params.userId;
 
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const updatedPodcast = await Podcast.findOneAndUpdate(
+      { _id: podcastId },
+      { $addToSet: { favoritesList: user } },
+      { new: true, upsert: true, includeResultMetadata: true }
+    );
+
+    if (!updatedPodcast) {
+      return res.status(404).json({ error: "Podcast not found" });
+    }
+
+    return res.json(updatedPodcast);
+  } catch (error) {
+    console.error("Error updating podcast:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Xóa một user khỏi favoritesList
+router.post("/:podcastId/remove-favorite/:userId", async (req, res) => {
+  const podcastId = req.params.podcastId;
+  const userId = req.params.userId;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const updatedPodcast = await Podcast.findOneAndUpdate(
+      { _id: podcastId },
+      { $pull: { favoritesList: user } },
+      { new: true }
+    );
+
+    if (!updatedPodcast) {
+      return res.status(404).json({ error: "Podcast not found" });
+    }
+
+    return res.json(updatedPodcast);
+  } catch (error) {
+    console.error("Error updating podcast:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+router.post("/:podcastId/add-subscribe/:userId", async (req, res) => {
+  const podcastId = req.params.podcastId;
+  const userId = req.params.userId;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const updatedPodcast = await Podcast.findOneAndUpdate(
+      { _id: podcastId },
+      { $addToSet: { subscribesList: user } },
+      { new: true, upsert: true, includeResultMetadata: true }
+    );
+
+    if (!updatedPodcast) {
+      return res.status(404).json({ error: "Podcast not found" });
+    }
+   
+    return res.json(updatedPodcast);
+  } catch (error) {
+    console.error("Error updating podcast:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+router.post("/:podcastId/remove-subscribe/:userId", async (req, res) => {
+  const podcastId = req.params.podcastId;
+  const userId = req.params.userId;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const updatedPodcast = await Podcast.findOneAndUpdate(
+      { _id: podcastId },
+      { $pull: {  subscribesList: { _id: userId } } },
+      { new: true }
+    );
+
+    if (!updatedPodcast) {
+      return res.status(404).json({ error: "Podcast not found" });
+    }
+ console.log({ test: updatedPodcast });
+    return res.json(updatedPodcast);
+  } catch (error) {
+    console.error("Error remove podcast:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 // GET: Lấy chi tiết podcast theo ID
 router.get("/:id", async (req, res) => {
   try {
-    const podcast  = await Podcast.findById(req.params.id);
+    const podcast = await Podcast.findById(req.params.id);
     if (!podcast) {
       return res.status(404).json({ error: "Không tìm thấy podcast" });
     }
@@ -90,6 +207,24 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.get("/subscribes/:userId", async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+   const podcasts = await Podcast.find({ 'subscribesList._id': userId });
+    console.log(podcasts);
+    if (!podcasts || podcasts.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No podcasts found for the user" });
+    }
+
+    return res.status(200).json(podcasts);
+  } catch (error) {
+    console.error("Error finding podcasts:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 // PUT: Cập nhật podcast theo ID
 
 // router.put("/:id", verifyTokenAndAdmin, async (req, res) => {
