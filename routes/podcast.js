@@ -5,7 +5,9 @@ const {
 } = require("./verifyToken");
 const { Podcast } = require("../models/Podcast");
 const { Topic } = require("../models/Topic");
+const { Episode } = require("../models/Episode");
 const { User } = require("../models/User");
+const { Channel } = require("../models/Channel");
 const router = require("express").Router();
 
 //GET ALL Episodes
@@ -29,6 +31,21 @@ router.get("/findByTopic/:topicId", async (req, res) => {
     res.status(500).json({ error: "Lỗi khi lấy danh sách podcast theo topic" });
   }
 });
+router.get("/findByChannel/:channelId", async (req, res) => {
+  try {
+    var list = [];
+    console.log(req.params.channelId);
+    const podcasts = await Podcast.find({
+      host: req.params.channelId
+    });
+    res.status(200).json(podcasts);
+  } catch (err) {
+    console.log(err);
+    res
+      .status(500)
+      .json({ error: "Lỗi khi lấy danh sách podcast theo channel" });
+  }
+});
 
 //search podcast
 router.get("/search", async (req, res) => {
@@ -42,7 +59,7 @@ router.get("/search", async (req, res) => {
     const regex = new RegExp(keyword, "i"); // Tìm kiếm không phân biệt chữ hoa chữ thường
 
     const podcasts = await Podcast.find({
-      $or: [{ title: { $regex: regex } }, { host: { $regex: regex } }]
+      $or: [{ title: { $regex: regex }  }]
     });
 
     res.status(200).json(podcasts);
@@ -52,7 +69,7 @@ router.get("/search", async (req, res) => {
   }
 });
 // POST: Tạo podcast mới
-router.post("/", verifyTokenAndAdmin, async (req, res) => {
+router.post("/", verifyTokenAndAuthorization, async (req, res) => {
   const {
     title,
     description,
@@ -110,6 +127,57 @@ router.post("/:podcastId/add-favorite/:userId", async (req, res) => {
   }
 });
 
+router.delete("/:idPodcast", verifyTokenAndAuthorization, async (req, res) => {
+  const idPodcast = req.params.idPodcast;
+
+  try {
+    // Find the podcast by ID
+    const deletedPodcast = await Podcast.findById(idPodcast);
+
+    if (!deletedPodcast) {
+      return res.status(404).json({ error: "Podcast not found" });
+    }
+
+    // Delete episodes from the episodesList of the podcast
+    await Episode.deleteMany({ _id: { $in: deletedPodcast.episodesList } });
+
+    // Delete the podcast
+    await Podcast.findByIdAndDelete(idPodcast);
+
+    res
+      .status(200)
+      .json({
+        message: "Podcast and associated episodes deleted successfully"
+      });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .json({ error: "Lỗi khi xóa podcast và episodes liên quan" });
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  const podcastId = req.params.id;
+  const updatedData = req.body;
+
+  try {
+    const updatedPodcast = await Podcast.findByIdAndUpdate(
+      podcastId,
+      updatedData,
+      { new: true } // Trả về tài liệu đã được cập nhật
+    );
+
+    if (updatedPodcast) {
+      res.json(updatedPodcast);
+    } else {
+      res.status(404).json({ error: "Podcast not found" });
+    }
+  } catch (error) {
+    console.error("Error updating channel:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 // Xóa một user khỏi favoritesList
 router.post("/:podcastId/remove-favorite/:userId", async (req, res) => {
   const podcastId = req.params.podcastId;

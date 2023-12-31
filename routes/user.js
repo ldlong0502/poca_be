@@ -3,16 +3,11 @@ const {
   verifyTokenAndAuthorization,
   verifyTokenAndAdmin
 } = require("./verifyToken");
-const User = require("../models/User");
+const {User } = require("../models/User");
 const router = require('express').Router();
 
 //UPDATE USER
 router.put("/:id", verifyTokenAndAuthorization , async (req, res) => {
-  if (req.body.password) {
-    req.body.password = CryptoJS.AES
-      .encrypt(password, process.env.PASS_SEC)
-      .toString();
-  }
 
   try {
     const updatedUser = await User.findByIdAndUpdate(req.params.id, {$set: req.body} , {new: true});
@@ -33,12 +28,14 @@ router.delete("/:id", verifyTokenAndAdmin , async (req, res) => {
 });
 
 //GET USER
-router.get("/:id", verifyTokenAndAuthorization, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
+     console.log(req.params.id);
     const user = await User.findById(req.params.id);
     const { orgPassword, ...others } = user._doc;
     res.status(200).json(others);
   } catch (err) {
+    console.log(err);
     res.status(500).json(err);
   }
 });
@@ -48,6 +45,19 @@ router.get("/", verifyTokenAndAuthorization, async (req, res) => {
   try {
     const users = await User.find();
     res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+router.delete("/:id", verifyTokenAndAuthorization, async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(deletedUser);
   } catch (err) {
     res.status(500).json(err);
   }

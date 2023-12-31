@@ -9,6 +9,8 @@ const topicRoute = require('./routes/topic');
 const episodeRoute = require("./routes/episode");
 const podcastRoute = require("./routes/podcast");
 const playlistRoute = require("./routes/playlist");
+const channelRoute = require("./routes/channel");
+const commentRoute = require("./routes/comment");
 dotenv.config();
 
 
@@ -23,6 +25,8 @@ app.use("/api/topics", topicRoute);
 app.use("/api/podcasts", episodeRoute);
 app.use("/api/podcasts", podcastRoute);
 app.use("/api/playlists", playlistRoute);
+app.use("/api/channel", channelRoute);
+app.use("/api/comment", commentRoute);
 
 app.listen( process.env.PORT || 5000, () => {
     console.log('server is running')

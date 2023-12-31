@@ -86,15 +86,17 @@ router.post("/refresh-token", async (req, res) => {
     if (!refreshToken) return res.status(401).json('Token is not existed');
     jwt.verify(refreshToken, process.env.JWT_SEC_REFRESH, (err, user) => {
       if (err)  return res.status(403).json("Token is not valid");
+
+      console.log({ aa: user });
       const accessToken = jwt.sign(
         {
-          id: user._id,
+          id: user.id,
           isAdmin: user.isAdmin
         },
         process.env.JWT_SEC,
         { expiresIn: "3d" }
       );
-      console.log(accessToken);
+      console.log({ access: accessToken });
       return res.status(200).json({ accessToken: accessToken });
     });
   } catch (error) {
