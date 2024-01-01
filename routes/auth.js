@@ -104,4 +104,29 @@ router.post("/refresh-token", async (req, res) => {
     return res.status(500).json({ error: error });
   }
 });
+router.post("/change-password/:id", async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    // Lấy thông tin người dùng từ cơ sở dữ liệu
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Hash mật khẩu mới và lưu vào cơ sở dữ liệu
+    const hashedNewPassword = CryptoJS.AES
+      .encrypt(newPassword, process.env.PASS_SEC)
+      .toString();
+    user.password = hashedNewPassword;
+    await user.save();
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 module.exports = router;

@@ -11,6 +11,7 @@ const podcastRoute = require("./routes/podcast");
 const playlistRoute = require("./routes/playlist");
 const channelRoute = require("./routes/channel");
 const commentRoute = require("./routes/comment");
+const resetPassRoute = require("./routes/passwordReset");
 dotenv.config();
 
 
@@ -27,6 +28,7 @@ app.use("/api/podcasts", podcastRoute);
 app.use("/api/playlists", playlistRoute);
 app.use("/api/channel", channelRoute);
 app.use("/api/comment", commentRoute);
+app.use("/api", resetPassRoute);
 
 app.listen( process.env.PORT || 5000, () => {
     console.log('server is running')
