@@ -13,8 +13,7 @@ PODCAST APP
 
 ### System requirements
 
-Dart SDK Version 2.18.0 or greater.<br>
-Flutter SDK Version 3.3.0 or greater.
+Node Version v16.17.1 or greater.<br>
 
 ### To run project
 
